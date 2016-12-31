@@ -34,9 +34,10 @@ The CSV File recorded contains below information.
       : TrackingState_Tracked	= 2	  
 
 # Example  
+
 # Function description
-## void CBodyBasics::DrawBody(INT64 nTime, const Joint* pJoints, const D2D1_POINT_2F* pJointPoints)
-Actually, Most of processes are in this function. Recording motion, Writing csv, etc...
+void CBodyBasics::DrawBody
+: Actually, Most of processes are in this function. Recording motion, Writing csv, etc...
 You should look into this function. Further descriptions are written in code. 
 
 # TODO
