@@ -36,7 +36,7 @@ The CSV File recorded contains below information.
 # Example  
 
 # Function description
-void CBodyBasics::DrawBody
+void CBodyBasics::DrawBody  
 : Actually, Most of processes are in this function. Recording motion, Writing csv, etc...
 You should look into this function. Further descriptions are written in code. 
 
