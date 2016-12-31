@@ -21,7 +21,8 @@ The CSV File recorded contains below information.
 9. state 
 
 ### Description for each information
-1. **Time** : Absolute time when the frame is recorded
+1. **Time** : Absolute time when the frame is recorded 
+- hh_mm_ss
 2. **nFrame** : The number of frame recorded
 3. **relativeTime** : Relative time, The unit time is 1 milisecond.
 4. **bodyIndex(str)** : Joint type (string)
@@ -32,4 +33,12 @@ The CSV File recorded contains below information.
       : TrackingState_Inferred	= 1,  
       : TrackingState_Tracked	= 2	  
 
-# Example
+# Example  
+# Function description
+## void CBodyBasics::DrawBody(INT64 nTime, const Joint* pJoints, const D2D1_POINT_2F* pJointPoints)
+Actually, Most of processes are in this function. Recording motion, Writing csv, etc...
+You should look into this function. Further descriptions are written in code. 
+
+# TODO
+1. Let absoulte time contains milisecond.  
+2. Test with actual kinect device.  
