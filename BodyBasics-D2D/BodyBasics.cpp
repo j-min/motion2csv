@@ -9,10 +9,42 @@
 #include "resource.h"
 #include "BodyBasics.h"
 
+
 static const float c_JointThickness = 3.0f;
 static const float c_TrackedBoneThickness = 6.0f;
 static const float c_InferredBoneThickness = 1.0f;
 static const float c_HandSize = 30.0f;
+static const char JointTypeEnumToChar[JointType_Count][32] =
+{
+	"SpineBase",
+	"SpineMid",
+	"Neck",
+	"Head",
+	"ShoulderLeft",
+	"ElbowLeft",
+	"WristLeft",
+	"HandLeft",
+	"ShoulderRight" ,
+	"ElbowRight" ,
+	"WristRight" ,
+	"HandRight" ,
+	"HipLeft" ,
+	"KneeLeft" ,
+	"AnkleLeft" ,
+	"FootLeft" ,
+	"HipRight" ,
+	"KneeRight" ,
+	"AnkleRight" ,
+	"FootRight" ,
+	"SpineShoulder" ,
+	"HandTipLeft" ,
+	"ThumbLeft",
+	"HandTipRight",
+	"ThumbRight"
+}; // 원래 Joint type의 구분은 enum이라 눈으로 보기 어려운 점이 있음. JointTypeEnumTochar[enum값] 이 Joint Type을 확인할 수 있게 함.
+// 실제 학습용 데이터를 뽑을땐 숫자로 하는 편이 더 좋긴 할거같긴한데 잘 모르겠당. 일단 지금은 enum과 string 둘 다 출력하게 하고 있음.
+
+ofstream skeletonToCSV;
 
 /// <summary>
 /// Entry point for the application
@@ -29,11 +61,19 @@ int APIENTRY wWinMain(
     _In_ int nShowCmd
 )
 {
+	string csvFilename = getCurrentTimeFormat() + ".csv"; // csv 파일 이름은 hh_mm_ss.csv 로 포맷됨. 포맷 방법은 해당 함수 내부에 구현되어있으므로 적당히 필요할 때 수정할 수 있음.
+	skeletonToCSV.open(csvFilename.c_str(), ios::out);
+	if (skeletonToCSV.fail()) 
+	{
+		return 0;
+	}
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     CBodyBasics application;
     application.Run(hInstance, nShowCmd);
+	skeletonToCSV.close();
 }
 
 /// <summary>
@@ -357,7 +397,7 @@ void CBodyBasics::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies)
                                 jointPoints[j] = BodyToScreen(joints[j].Position, width, height);
                             }
 
-                            DrawBody(joints, jointPoints);
+                            DrawBody(nTime, joints, jointPoints);
 
                             DrawHand(leftHandState, jointPoints[JointType_HandLeft]);
                             DrawHand(rightHandState, jointPoints[JointType_HandRight]);
@@ -516,11 +556,47 @@ D2D1_POINT_2F CBodyBasics::BodyToScreen(const CameraSpacePoint& bodyPoint, int w
 /// <summary>
 /// Draws a body 
 /// </summary>
+/// <param name="nTime">타임스탬프 :: 1당 100나노초 </param>
 /// <param name="pJoints">joint data</param>
 /// <param name="pJointPoints">joint positions converted to screen space</param>
-void CBodyBasics::DrawBody(const Joint* pJoints, const D2D1_POINT_2F* pJointPoints)
+void CBodyBasics::DrawBody(INT64 nTime, const Joint* pJoints, const D2D1_POINT_2F* pJointPoints)
 {
     // Draw the bones
+	
+	static INT64 nStartTime = 0;        // 인자로 들어오는 nTime을 영상 내의 절대시간으로 변환하기 위한 offset (nTime은 아주 큰 값에서부터 100나노초당 1씩 증가한다.)
+	static INT64 nFrameCount = 0;		// DrawBody를 통해 처리된 프레임 개수.
+	static string curTime;
+	static char posbuff[256];
+
+	nFrameCount++;
+	if (nStartTime == (INT64)0) // 함수 최초 호출 : csv파일에 index 출력, nTime offset 설정.
+	{
+		snprintf(posbuff, sizeof(posbuff), "Time, nFrame,relativeTime,bodyIndex(str),bodyIndex,X,Y,Z,state\n");
+		OutputDebugStringA(posbuff);
+		skeletonToCSV.write(posbuff, strlen(posbuff));
+		nStartTime = nTime;
+	}
+
+	curTime = getCurrentTimeFormat();
+	for (int i = 0; i < JointType_Count; i++) // 각 Joint별 좌표 출력
+	{
+		snprintf(posbuff, sizeof(posbuff), "%s, %I64u,%I64u,%s,%d,%f,%f,%f,%d\n", 
+			curTime.c_str(), 
+			nFrameCount, 
+			(nTime - nStartTime) / 10000, 
+			JointTypeEnumToChar[i], 
+			i, 
+			pJoints[i].Position.X, 
+			pJoints[i].Position.Y, 
+			pJoints[i].Position.Z,
+			pJoints[i].TrackingState
+		);
+		OutputDebugStringA(posbuff);
+		skeletonToCSV.write(posbuff, strlen(posbuff));
+	}
+
+
+
 
     // Torso
     DrawBone(pJoints, pJointPoints, JointType_Head, JointType_Neck);
@@ -631,4 +707,15 @@ void CBodyBasics::DrawHand(HandState handState, const D2D1_POINT_2F& handPositio
             m_pRenderTarget->FillEllipse(ellipse, m_pBrushHandLasso);
             break;
     }
+}
+
+string getCurrentTimeFormat()
+{
+	static time_t rawTime;
+	static tm*	tmTime;
+	char	buffer[128];
+	time(&rawTime); tmTime = localtime(&rawTime);
+	strftime(buffer, sizeof(buffer), "%H_%M_%S", tmTime); // 시간 포맷팅 부분
+	string rt(buffer);
+	return rt;
 }

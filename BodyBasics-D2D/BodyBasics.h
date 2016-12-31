@@ -7,6 +7,11 @@
 #pragma once
 
 #include "resource.h"
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <ctime>
+using namespace std;
 
 class CBodyBasics
 {
@@ -129,9 +134,10 @@ private:
     /// <summary>
     /// Draws a body 
     /// </summary>
+	/// <param name="nTime">≈∏¿”Ω∫≈∆«¡</param>
     /// <param name="pJoints">joint data</param>
     /// <param name="pJointPoints">joint positions converted to screen space</param>
-    void                    DrawBody(const Joint* pJoints, const D2D1_POINT_2F* pJointPoints);
+    void                    DrawBody(INT64 nTime, const Joint* pJoints, const D2D1_POINT_2F* pJointPoints);
 
     /// <summary>
     /// Draws a hand symbol if the hand is tracked: red circle = closed, green circle = opened; blue circle = lasso
@@ -149,5 +155,7 @@ private:
     /// <param name="joint0">one joint of the bone to draw</param>
     /// <param name="joint1">other joint of the bone to draw</param>
     void                    DrawBone(const Joint* pJoints, const D2D1_POINT_2F* pJointPoints, JointType joint0, JointType joint1);
+
 };
 
+string getCurrentTimeFormat();
