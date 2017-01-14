@@ -74,6 +74,7 @@ int APIENTRY wWinMain(
     CBodyBasics application;
     application.Run(hInstance, nShowCmd);
 	skeletonToCSV.close();
+	return 0;
 }
 
 /// <summary>
@@ -709,13 +710,13 @@ void CBodyBasics::DrawHand(HandState handState, const D2D1_POINT_2F& handPositio
     }
 }
 
+// 시간 포맷팅 부분
 string getCurrentTimeFormat()
 {
-	static time_t rawTime;
-	static tm*	tmTime;
-	char	buffer[128];
-	time(&rawTime); tmTime = localtime(&rawTime);
-	strftime(buffer, sizeof(buffer), "%H_%M_%S", tmTime); // 시간 포맷팅 부분
+	SYSTEMTIME st;
+	GetSystemTime(&st);
+	char buffer[128]; 
+	sprintf(buffer, "%02d_%02d_%02d_%04d", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 	string rt(buffer);
 	return rt;
 }
