@@ -719,4 +719,5 @@ string getCurrentTimeFormat()
 	sprintf(buffer, "%02d_%02d_%02d_%04d", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 	string rt(buffer);
 	return rt;
+
 }
