@@ -17,7 +17,7 @@ class CBodyBasics
 {
     static const int        cDepthWidth  = 512;
     static const int        cDepthHeight = 424;
-
+	#define		cCSVHeader "Time, nFrame,relativeTime,bodyIndex(str),bodyIndex,X,Y,Z,state\n"
 public:
     /// <summary>
     /// Constructor
@@ -63,6 +63,9 @@ private:
     double                  m_fFreq;
     INT64                   m_nNextStatusTime;
     DWORD                   m_nFramesSinceUpdate;
+
+	INT64					m_isRunning;
+	ofstream				m_csvstream;
 
     // Current Kinect
     IKinectSensor*          m_pKinectSensor;
@@ -156,6 +159,8 @@ private:
     /// <param name="joint1">other joint of the bone to draw</param>
     void                    DrawBone(const Joint* pJoints, const D2D1_POINT_2F* pJointPoints, JointType joint0, JointType joint1);
 
+	INT64					ToggleRunning();
+	INT64					WriteCSV(const char* buffer, size_t sz);
 };
 
 string getCurrentTimeFormat();

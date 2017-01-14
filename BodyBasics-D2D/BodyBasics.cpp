@@ -44,7 +44,6 @@ static const char JointTypeEnumToChar[JointType_Count][32] =
 }; // 원래 Joint type의 구분은 enum이라 눈으로 보기 어려운 점이 있음. JointTypeEnumTochar[enum값] 이 Joint Type을 확인할 수 있게 함.
 // 실제 학습용 데이터를 뽑을땐 숫자로 하는 편이 더 좋긴 할거같긴한데 잘 모르겠당. 일단 지금은 enum과 string 둘 다 출력하게 하고 있음.
 
-ofstream skeletonToCSV;
 
 /// <summary>
 /// Entry point for the application
@@ -61,19 +60,12 @@ int APIENTRY wWinMain(
     _In_ int nShowCmd
 )
 {
-	string csvFilename = getCurrentTimeFormat() + ".csv"; // csv 파일 이름은 hh_mm_ss.csv 로 포맷됨. 포맷 방법은 해당 함수 내부에 구현되어있으므로 적당히 필요할 때 수정할 수 있음.
-	skeletonToCSV.open(csvFilename.c_str(), ios::out);
-	if (skeletonToCSV.fail()) 
-	{
-		return 0;
-	}
 
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     CBodyBasics application;
     application.Run(hInstance, nShowCmd);
-	skeletonToCSV.close();
 	return 0;
 }
 
@@ -81,12 +73,13 @@ int APIENTRY wWinMain(
 /// Constructor
 /// </summary>
 CBodyBasics::CBodyBasics() :
-    m_hWnd(NULL),
-    m_nStartTime(0),
-    m_nLastCounter(0),
-    m_nFramesSinceUpdate(0),
-    m_fFreq(0),
-    m_nNextStatusTime(0LL),
+	m_hWnd(NULL),
+	m_nStartTime(0),
+	m_nLastCounter(0),
+	m_nFramesSinceUpdate(0),
+	m_fFreq(0),
+	m_isRunning(0),
+	m_nNextStatusTime(0LL),
     m_pKinectSensor(NULL),
     m_pCoordinateMapper(NULL),
     m_pBodyFrameReader(NULL),
@@ -129,6 +122,12 @@ CBodyBasics::~CBodyBasics()
     {
         m_pKinectSensor->Close();
     }
+
+	// close file stream
+	if (m_csvstream)
+	{
+		m_csvstream.close();
+	}
 
     SafeRelease(m_pKinectSensor);
 }
@@ -287,7 +286,19 @@ LRESULT CALLBACK CBodyBasics::DlgProc(HWND hWnd, UINT message, WPARAM wParam, LP
             InitializeDefaultSensor();
         }
         break;
-
+		case WM_COMMAND:
+			switch (LOWORD(wParam))
+			{
+			case IDC_BUTTON1:
+				if (ToggleRunning() < 0)
+				{
+					MessageBox(hWnd, L"상태 전환에 실패했습니다.", L"에러", MB_OK);
+				}
+				break;
+			default:
+				break;
+			}
+			break;
         // If the titlebar X is clicked, destroy app
         case WM_CLOSE:
             DestroyWindow(hWnd);
@@ -570,12 +581,13 @@ void CBodyBasics::DrawBody(INT64 nTime, const Joint* pJoints, const D2D1_POINT_2
 	static char posbuff[256];
 
 	nFrameCount++;
+
 	if (nStartTime == (INT64)0) // 함수 최초 호출 : csv파일에 index 출력, nTime offset 설정.
 	{
-		snprintf(posbuff, sizeof(posbuff), "Time, nFrame,relativeTime,bodyIndex(str),bodyIndex,X,Y,Z,state\n");
-		OutputDebugStringA(posbuff);
-		skeletonToCSV.write(posbuff, strlen(posbuff));
 		nStartTime = nTime;
+	}
+	if (!m_csvstream) {
+		nStartTime = 0; nFrameCount = 0;
 	}
 
 	curTime = getCurrentTimeFormat();
@@ -593,7 +605,7 @@ void CBodyBasics::DrawBody(INT64 nTime, const Joint* pJoints, const D2D1_POINT_2
 			pJoints[i].TrackingState
 		);
 		OutputDebugStringA(posbuff);
-		skeletonToCSV.write(posbuff, strlen(posbuff));
+		WriteCSV(posbuff, strlen(posbuff));
 	}
 
 
@@ -683,6 +695,47 @@ void CBodyBasics::DrawBone(const Joint* pJoints, const D2D1_POINT_2F* pJointPoin
     {
         m_pRenderTarget->DrawLine(pJointPoints[joint0], pJointPoints[joint1], m_pBrushBoneInferred, c_InferredBoneThickness);
     }
+}
+
+INT64 CBodyBasics::ToggleRunning()
+{
+	if (m_isRunning)
+	{
+		SetDlgItemText(m_hWnd, IDC_EDIT2, L"정지");
+		m_isRunning = 0;
+	}
+	else
+	{
+		SetDlgItemText(m_hWnd, IDC_EDIT2, L"실행중");
+		m_isRunning = 1;
+	}
+
+	// 실행중으로 바뀌는 경우 새로 csv 생성
+	if (m_isRunning)
+	{
+		m_csvstream.open((getCurrentTimeFormat() + string(".csv")), ios::out);
+		if (m_csvstream.fail())
+		{
+			return -1;
+		}
+		WriteCSV(cCSVHeader, strlen(cCSVHeader));
+	}
+	else
+	{
+		m_csvstream.close();
+	}
+
+	return 0;
+}
+
+INT64 CBodyBasics::WriteCSV(const char * buffer, size_t sz)
+{
+	if (m_csvstream)
+	{
+		m_csvstream.write(buffer, sz);
+		return 0;
+	}
+	return -1;
 }
 
 /// <summary>
