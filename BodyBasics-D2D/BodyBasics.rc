@@ -15,7 +15,7 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// 영어(미국) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
@@ -45,8 +45,10 @@ FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
     CONTROL         "",IDC_VIDEOVIEW,"Static",SS_BLACKFRAME,0,0,513,390
     LTEXT           "",IDC_STATUS,0,394,513,11,SS_SUNKEN
-    EDITTEXT        IDC_EDIT2,7,410,74,15,ES_AUTOHSCROLL
-    PUSHBUTTON      "?? ??",IDC_BUTTON1,87,410,63,15
+    EDITTEXT        IDC_EDIT2,73,409,74,15,ES_CENTER | ES_AUTOHSCROLL | ES_READONLY | NOT WS_TABSTOP
+    PUSHBUTTON      "Recording",IDC_BUTTON1,6,409,63,15
+    PUSHBUTTON      "StateTracking",IDC_BUTTON2_TRACK,225,409,70,14
+    CTEXT           "Tracking",IDC_STATIC_TRACK,297,410,61,12,WS_BORDER
 END
 
 
@@ -93,7 +95,7 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
-#endif    // 영어(미국) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

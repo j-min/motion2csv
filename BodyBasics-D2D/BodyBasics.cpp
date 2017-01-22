@@ -79,6 +79,7 @@ CBodyBasics::CBodyBasics() :
 	m_nFramesSinceUpdate(0),
 	m_fFreq(0),
 	m_isRunning(0),
+	m_isRecordingState(1),
 	m_nNextStatusTime(0LL),
     m_pKinectSensor(NULL),
     m_pCoordinateMapper(NULL),
@@ -281,7 +282,7 @@ LRESULT CALLBACK CBodyBasics::DlgProc(HWND hWnd, UINT message, WPARAM wParam, LP
 
             // Init Direct2D
             D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &m_pD2DFactory);
-
+			
             // Get and initialize the default Kinect sensor
             InitializeDefaultSensor();
         }
@@ -289,16 +290,36 @@ LRESULT CALLBACK CBodyBasics::DlgProc(HWND hWnd, UINT message, WPARAM wParam, LP
 		case WM_COMMAND:
 			switch (LOWORD(wParam))
 			{
-			case IDC_BUTTON1:
+			case IDC_BUTTON1: // Toggle Recording CSV
 				if (ToggleRunning() < 0)
 				{
 					MessageBox(hWnd, L"상태 전환에 실패했습니다.", L"에러", MB_OK);
+				}
+				break;
+			case IDC_BUTTON2_TRACK: // Toggle Tracking State
+				if (!m_isRunning)
+				{
+					if (m_isRecordingState)
+					{
+						SetDlgItemText(m_hWnd, IDC_STATIC_TRACK, L"Not Tracking");
+						m_isRecordingState = 0;
+					}
+					else
+					{
+						SetDlgItemText(m_hWnd, IDC_STATIC_TRACK, L"Tracking");
+						m_isRecordingState = 1;
+					}
+				}
+				else
+				{
+					MessageBox(hWnd, L"촬영중에는 State Tracking 여부를 변경할 수 없습니다.", L"에러", MB_OK);
 				}
 				break;
 			default:
 				break;
 			}
 			break;
+
         // If the titlebar X is clicked, destroy app
         case WM_CLOSE:
             DestroyWindow(hWnd);
@@ -578,7 +599,7 @@ void CBodyBasics::DrawBody(INT64 nTime, const Joint* pJoints, const D2D1_POINT_2
 	static INT64 nStartTime = 0;        // 인자로 들어오는 nTime을 영상 내의 절대시간으로 변환하기 위한 offset (nTime은 아주 큰 값에서부터 100나노초당 1씩 증가한다.)
 	static INT64 nFrameCount = 0;		// DrawBody를 통해 처리된 프레임 개수.
 	static string curTime;
-	static char posbuff[256];
+	static char posbuff[2048];
 
 	nFrameCount++;
 
@@ -591,22 +612,30 @@ void CBodyBasics::DrawBody(INT64 nTime, const Joint* pJoints, const D2D1_POINT_2
 	}
 
 	curTime = getCurrentTimeFormat();
+	snprintf(posbuff, sizeof(posbuff), "%s,", curTime.c_str());
+	WriteCSV(posbuff, strlen(posbuff));
 	for (int i = 0; i < JointType_Count; i++) // 각 Joint별 좌표 출력
 	{
-		snprintf(posbuff, sizeof(posbuff), "%s, %I64u,%I64u,%s,%d,%f,%f,%f,%d\n", 
-			curTime.c_str(), 
-			nFrameCount, 
-			(nTime - nStartTime) / 10000, 
-			JointTypeEnumToChar[i], 
-			i, 
-			pJoints[i].Position.X, 
-			pJoints[i].Position.Y, 
-			pJoints[i].Position.Z,
-			pJoints[i].TrackingState
-		);
-		OutputDebugStringA(posbuff);
+		if (m_isRecordingState)
+		{
+			snprintf(posbuff, sizeof(posbuff), "%f,%f,%f,%d,",
+				pJoints[i].Position.X,
+				pJoints[i].Position.Y,
+				pJoints[i].Position.Z,
+				pJoints[i].TrackingState
+			);
+		}
+		else
+		{
+			snprintf(posbuff, sizeof(posbuff), "%f,%f,%f,",
+				pJoints[i].Position.X,
+				pJoints[i].Position.Y,
+				pJoints[i].Position.Z
+			);
+		}
 		WriteCSV(posbuff, strlen(posbuff));
 	}
+	WriteCSV("\n", sizeof("\n"));
 
 
 
@@ -699,6 +728,23 @@ void CBodyBasics::DrawBone(const Joint* pJoints, const D2D1_POINT_2F* pJointPoin
 
 INT64 CBodyBasics::ToggleRunning()
 {
+	m_sCSVHeader = "Time,";
+	for (int i = 0; i < JointType_Count; ++i)
+	{
+		m_sCSVHeader += JointTypeEnumToChar[i];
+		m_sCSVHeader += "_X,";
+		m_sCSVHeader += JointTypeEnumToChar[i];
+		m_sCSVHeader += "_Y,";
+		m_sCSVHeader += JointTypeEnumToChar[i];
+		m_sCSVHeader += "_Z,";
+		if (m_isRecordingState)
+		{
+			m_sCSVHeader += JointTypeEnumToChar[i];
+			m_sCSVHeader += "_State,";
+		}
+	}
+	m_sCSVHeader += "\n";
+	
 	if (m_isRunning)
 	{
 		SetDlgItemText(m_hWnd, IDC_EDIT2, L"정지");
@@ -718,7 +764,7 @@ INT64 CBodyBasics::ToggleRunning()
 		{
 			return -1;
 		}
-		WriteCSV(cCSVHeader, strlen(cCSVHeader));
+		WriteCSV(m_sCSVHeader.c_str(), m_sCSVHeader.length());
 	}
 	else
 	{

@@ -17,7 +17,8 @@ class CBodyBasics
 {
     static const int        cDepthWidth  = 512;
     static const int        cDepthHeight = 424;
-	#define		cCSVHeader "Time, nFrame,relativeTime,bodyIndex(str),bodyIndex,X,Y,Z,state\n"
+	#define		cCSVHeader "Time,nFrame,relativeTime,bodyIndex(str),bodyIndex,X,Y,Z,state\n"
+	
 public:
     /// <summary>
     /// Constructor
@@ -63,8 +64,10 @@ private:
     double                  m_fFreq;
     INT64                   m_nNextStatusTime;
     DWORD                   m_nFramesSinceUpdate;
-
-	INT64					m_isRunning;
+	
+	string					m_sCSVHeader;
+	INT64					m_isRunning;			// csv 촬영중이면 1, 아니면 0
+	INT64					m_isRecordingState;		// 관절 state를 csv에 포함하면 1, 아니면 0
 	ofstream				m_csvstream;
 
     // Current Kinect
@@ -158,7 +161,7 @@ private:
     /// <param name="joint0">one joint of the bone to draw</param>
     /// <param name="joint1">other joint of the bone to draw</param>
     void                    DrawBone(const Joint* pJoints, const D2D1_POINT_2F* pJointPoints, JointType joint0, JointType joint1);
-
+	
 	INT64					ToggleRunning();
 	INT64					WriteCSV(const char* buffer, size_t sz);
 };
