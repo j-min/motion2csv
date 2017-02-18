@@ -6,6 +6,8 @@ Recording Motion with skeleton coordinates using MS Kinect v2
 2. Start program, 
 3. Let Kinect record the human's motion.
 -> Then Formatted csv file will be written.
+4. **(Optional)** Cubic splining for csv file
+-> python csv_cs.py input.csv output.csv
 
 # Output
 The CSV File recorded contains below information.
@@ -41,5 +43,3 @@ void CBodyBasics::DrawBody
 You should look into this function. Further descriptions are written in code. 
 
 # TODO
-1. Let absoulte time contains milisecond.  
-2. Test with actual kinect device.  
