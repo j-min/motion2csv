@@ -33,9 +33,12 @@ def main():
 
         for line in lines[1:]:
             time = line.split(',')[0].split('_')
-            hour, min, sec, msec = map(int,time)
-            totalmsec = ((((60 * hour) + min) * 60) + sec) * 1000 + msec
-            times.append(totalmsec)
+            try:
+                hour, min, sec, msec = map(int,time)
+                totalmsec = ((((60 * hour) + min) * 60) + sec) * 1000 + msec
+                times.append(totalmsec)
+            except:
+                pass
 
     t = np.array(times)                                      # t :: 시간축 데이터 (milisecond)
     xs = np.arange((t[0]) // time_interval * time_interval + time_interval, t[-1], time_interval)    # xs :: 100ms 단위의 시간축 데이터 (milisecond)
@@ -60,8 +63,7 @@ def main():
             min = xs[i] // 1000 // 60 % 60
             hour = xs[i] // 1000 // 60 // 60
             f.write("%d_%d_%d_%d"%(hour, min, sec, msec)+',')
-            for j in range(len(result[0])):
-                f.write(np.str(result[i][j]) + ',')
+            f.write(",".join(map(str,result[i])))
             f.write("\n")
 
 if __name__ == "__main__":
